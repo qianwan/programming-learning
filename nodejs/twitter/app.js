@@ -1,6 +1,6 @@
 var express = require('express');
 
-var app = express.createServer();
+var app = express();
 app.listen(4080);
 var tweets = [];
 
