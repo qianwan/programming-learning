@@ -2,7 +2,12 @@
 
 extern Lisp_Object wrong_type_argument(Lisp_Object, Lisp_Object);
 
-#define CHECK_TYPE(ok, Qxxxp, x) \
-  do { if (!(ok)) wrong_type_argument(Qxxxp, (x)); } while(0)
+DEFUN("require", Frequire, Srequire, 1, 3, 0, doc:)
+     (Lisp_Object feature, Lisp_Object filename, Lisp_Object noerror)
+{
+}
 
-#define CHECK_SYMBOL(x) CHECK_TYPE(SYMBOLP(x), Qconsp, x)
+int main() {
+
+  return 0;
+}

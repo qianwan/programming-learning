@@ -176,3 +176,70 @@ enum lsb_bits
 #define XTYPE(a) ((enum Lisp_Type) (XLI (a) & TYPEMASK))
 
 #define SYMBOLP(x) (XTYPE ((x)) == Lisp_Symbol)
+
+#define CHECK_TYPE(ok, Qxxxp, x) \
+  do { if (!(ok)) wrong_type_argument(Qxxxp, (x)); } while(0)
+
+#define CHECK_SYMBOL(x) CHECK_TYPE(SYMBOLP(x), Qconsp, x)
+
+Lisp_Object LISP_MAKE_RVALUE(Lisp_Object o) { return o; }
+
+#define eassert(X) ((void) (0 && (X)))
+
+#define CONSP(x) (XTYPE((x)) == Lisp_Cons)
+
+struct Lisp_Cons
+{
+  Lisp_Object car;
+  union
+  {
+    Lisp_Object cdr;
+    struct Lisp_Cons *chain;
+  } u;
+};
+
+#define XUNTAG(a, type) (intptr_t (XLI(a) - (type)))
+
+#define XCONS(a) (eassert (CONSP (a)),                          \
+                  (struct Lisp_Cons *) XUNTAG (a, Lisp_Cons))
+
+#define XCDR_AS_LVALUE(c) (XCONS (c)->u.cdr)
+
+#define XCDR(c) LISP_MAKE_RVALUE (XCDR_AS_LVALUE(c))
+
+enum Lisp_Fwd_Type
+  {
+    Lisp_Fwd_Int,		/* Fwd to a C `int' variable.  */
+    Lisp_Fwd_Bool,		/* Fwd to a C boolean var.  */
+    Lisp_Fwd_Obj,		/* Fwd to a C Lisp_Object variable.  */
+    Lisp_Fwd_Buffer_Obj,	/* Fwd to a Lisp_Object field of buffers.  */
+    Lisp_Fwd_Kboard_Obj,	/* Fwd to a Lisp_Object field of kboards.  */
+  };
+
+struct Lisp_Objfwd
+{
+  enum Lisp_Fwd_Type type;
+  Lisp_Object *objvar;
+};
+
+extern void defvar_lisp(struct Lisp_Objfwd *, const char *, Lisp_Object *);
+
+#define DEFVAR_LISP(lname, vname, doc)                  \
+  do {                                                  \
+    static struct Lisp_Objfwd o_fwd;                    \
+    defvar_lisp (&o_fwd, lname, &globals.f_ ## vname);  \
+  } while (0)
+
+struct Lisp_Boolfwd
+{
+  enum Lisp_Fwd_Type type;
+  Lisp_Object *boolvar;
+};
+
+extern void defvar_bool(struct Lisp_Boolfwd *, const char *, Lisp_Object *);
+
+#define DEFVAR_BOOL(lname, vname, doc)                  \
+  do {                                                  \
+    static struct Lisp_Boolfwd b_fwd;                   \
+    defvar_bool (&b_fwd, lname, &globals.f_ ## vname);  \
+  } while (0)
