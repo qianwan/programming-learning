@@ -1,0 +1,17 @@
+Lisp Memo
+=============
+
+S-expression
+1. an atom, or
+2. an expression of the form (x . y) where x and y are s-expressions.
+
+Lisp Forms:
+1. Function calls
+2. Macros
+3. Special operators
+
+Macros
+Steps to compile and run:
+1. Expand macros recursively until the code consists of only function call forms and special forms.
+2. The macroless code is compiled into a FASL file.
+3. Load FASL file
