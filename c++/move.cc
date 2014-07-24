@@ -4,6 +4,7 @@
 #include <set>
 #include <utility>
 #include <vector>
+#include <math.h>
 
 //#include "move.h"
 
@@ -47,10 +48,14 @@ public:
   Internal s_;
 };
 
-void foo() {
+X foo() {
   X x("qian");
+  X y("wan");
   std::cout << "in foo function " << x.s_.str << std::endl;
-  //return x;
+  if (rand() & 1)
+    return x;
+  else
+    return y;
 }
 
 int main() {
