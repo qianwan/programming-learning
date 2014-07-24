@@ -40,38 +40,43 @@
           (if (< ,var ,endv) (go start))
           end))))
 
-(defmacro my-do (variable-definition test-result-form &rest body)
-  (let ((variable-definition-syms (make-symbol "variable-definition-symbols"))
-        (variable (make-symbol "variable")))
-    `(let ((,variable-definition-syms ())
-           (,variable ',variable-definition))
-       (tagbody
-          start
-          (if ,variable
-              )
-          end)
-       (tagbody
-          start
-          end)
-       ,@body)))
+(defun get-init-list (variable-definitions)
+  (let ((variable-list nil))
+    (dolist (var-def variable-definitions)
+      (let ((var (car var-def))
+            (val (cadr var-def)))
+        (setq variable-list (cons (list var val) variable-list))))
+    variable-list))
 
-(defmacro get-init-list (variable-definitions)
-  (let ((init-list (make-symbol "init-list"))
-        (list-iter (make-symbol "list-iter"))
-        (list-var (make-symbol "list-var")))
-    `(let ((,init-list nil)
-           (,list-iter ',variable-definitions))
+(defun get-step-list (variable-definitions)
+  (let ((step-list nil))
+    (dolist (step-def variable-definitions)
+      (setq step-list (cons (caddr step-def) step-list)))
+    step-list))
+
+(defmacro my-do (variable-definitions test-result-form &rest body)
+  (let ((init-list (get-init-list variable-definitions))
+        (step-list (get-step-list variable-definitions)))
+    `(let* ,init-list
        (tagbody
           start
-          (if ,list-iter
-              (let ((,list-var (car ,list-iter)))
-                (setq ,init-list (cons '((car ,list-var) (cadr ,list-var)) ,init-list)))
-              (go end))
-          (setq ,list-iter (cdr ,list-iter))
+          (if ,(car test-result-form)
+              (go end)
+              (progn ,@body))
+          ,@step-list
           (go start)
           end)
-       ,init-list)))
+       ,(cadr test-result-form))))
 
 (macroexpand-1
- '(get-init-list ((x 1 (incf x))
-                  (y 2 (decf y)))))
+ '(my-do ((x 1 (incf x))
+          (y 5 (decf y)))
+   ((< (* x y) 0) (* x y))
+   (print x)
+   (prin1 y)))
+
+(my-do ((x 1 (incf x))
+        (y 5 (decf y)))
+    ((< (* x y) 0) (* x y))
+  (print x)
+  (prin1 y))
