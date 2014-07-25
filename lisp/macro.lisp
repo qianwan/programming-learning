@@ -80,3 +80,26 @@
     ((< (* x y) 0) (* x y))
   (print x)
   (prin1 y))
+
+(defmacro my-setf (x v)
+  `(setq ,x ,v))
+
+(defmacro real-macro (x y)
+  (list 'progn (list 'print x) (list 'print y)))
+
+(defmacro with-gensyms ((&rest names) &body body)
+  `(let ,(loop for n in names collect `(,n (gensym)))
+     ,@body))
+
+(with-gensyms (x))
+
+(defmacro do-something ((var start end) &body body)
+  (with-gensyms (ending-value-name)
+    `(do ((,var ,start (1+ ,var))
+          (,ending-value-name ,end))
+         ((> ,var ,ending-value-name))
+       ,@body)))
+
+(format t "~%")
+(do-something (x 1 10)
+  (prin1 x))
