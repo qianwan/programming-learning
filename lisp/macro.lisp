@@ -103,3 +103,23 @@
 (format t "~%")
 (do-something (x 1 10)
   (prin1 x))
+
+(defmacro once-only (variables &rest body)
+  "Returns the code built by BODY.  If any of VARIABLES
+  might have side effects, they are evaluated once and stored
+  in temporary variables that are then passed to BODY."
+  (assert (every #'symbolp variables))
+  (let ((temps nil))
+    (dotimes (i (length variables)) (push (gensym) temps))
+    `(if (every #'side-effect-free? (list .,variables))
+         (progn .,body)
+         (list 'let
+          ,`(list ,@(mapcar #'(lambda (tmp var)
+                                `(list ',tmp ,var))
+                     temps variables))
+          (let ,(mapcar #'(lambda (var tmp) `(,var ',tmp))
+                        variables temps)
+            .,body)))))
+
+(once-only ((x (+ 1 2)))
+  (print x))
