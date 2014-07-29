@@ -91,8 +91,6 @@
   `(let ,(loop for n in names collect `(,n (gensym)))
      ,@body))
 
-(with-gensyms (x))
-
 (defmacro do-something ((var start end) &body body)
   (with-gensyms (ending-value-name)
     `(do ((,var ,start (1+ ,var))
@@ -100,26 +98,39 @@
          ((> ,var ,ending-value-name))
        ,@body)))
 
-(format t "~%")
-(do-something (x 1 10)
-  (prin1 x))
+(defmacro our-let (binds &body body)
+  `((lambda ,(mapcar #'(lambda (x)
+                    (if (consp x) (car x) x))
+                binds)
+      ,@body)
+    ,@(mapcar #'(lambda (x)
+                  (if (consp x) (cadr x) nil))
+              binds)))
 
-(defmacro once-only (variables &rest body)
-  "Returns the code built by BODY.  If any of VARIABLES
-  might have side effects, they are evaluated once and stored
-  in temporary variables that are then passed to BODY."
-  (assert (every #'symbolp variables))
-  (let ((temps nil))
-    (dotimes (i (length variables)) (push (gensym) temps))
-    `(if (every #'side-effect-free? (list .,variables))
-         (progn .,body)
-         (list 'let
-          ,`(list ,@(mapcar #'(lambda (tmp var)
-                                `(list ',tmp ,var))
-                     temps variables))
-          (let ,(mapcar #'(lambda (var tmp) `(,var ',tmp))
-                        variables temps)
-            .,body)))))
+(defun mappend (fn &rest lsts)
+  (print lsts)
+  (apply #'append (apply #'mapcar fn lsts)))
 
-(once-only ((x (+ 1 2)))
-  (print x))
+(defmacro condlet (clauses &body body)
+  (let ((bodfn (gensym))
+        (vars (mapcar #'(lambda (v) (cons v (gensym)))
+                      (remove-duplicates
+                       (mapcar #'car
+                               (mappend #'cdr clauses))))))
+    `(labels ((,bodfn ,(mapcar #'car vars)
+                ,@body))
+       (cond ,@(mapcar #'(lambda (cl)
+                           (condlet-clause vars cl bodfn))
+                       clauses)))))
+
+(defun condlet-clause (vars cl bodfn)
+  `(,(car cl) (let ,(mapcar #'cdr vars)
+                (let ,(condlet-binds vars cl)
+                  (,bodfn ,@(mapcar #'cdr vars))))))
+
+(defun condlet-binds (vars cl)
+  (mapcar #'(lambda (bindform)
+              (if (consp bindform)
+                  (cons (cdr (assoc (car bindform) vars))
+                        (cdr bindform))))
+          (cdr cl)))

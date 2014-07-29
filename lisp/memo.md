@@ -57,3 +57,9 @@ Modify macros include INCF, DECF, PUSH, POP, PUSHNEW, ROTATEF and SHIFTF.
     (incf (car x))
     (prin1 x))
 ;;; should return (2 2 3)
+
+## Utils ##
+This section shows how some useful utils work.
+
+### MAPC, MAPCAR, MAPCAN, MAPL, MAPLIST, MAPCON ###
+(MAPCAR) operates on successive elements of the lists
