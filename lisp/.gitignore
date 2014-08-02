@@ -1,0 +1,4 @@
+*.sse2f
+*.dx64fsl
+*.dx32fsl
+*.fasl
