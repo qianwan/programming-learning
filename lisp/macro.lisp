@@ -40,19 +40,20 @@
           (if (< ,var ,endv) (go start))
           end))))
 
-(defun get-init-list (variable-definitions)
-  (let ((variable-list nil))
-    (dolist (var-def variable-definitions)
-      (let ((var (car var-def))
-            (val (cadr var-def)))
-        (setq variable-list (cons (list var val) variable-list))))
-    variable-list))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun get-init-list (variable-definitions)
+    (let ((variable-list nil))
+      (dolist (var-def variable-definitions)
+        (let ((var (car var-def))
+              (val (cadr var-def)))
+          (setq variable-list (cons (list var val) variable-list))))
+      variable-list))
 
-(defun get-step-list (variable-definitions)
-  (let ((step-list nil))
-    (dolist (step-def variable-definitions)
-      (setq step-list (cons (caddr step-def) step-list)))
-    step-list))
+  (defun get-step-list (variable-definitions)
+    (let ((step-list nil))
+      (dolist (step-def variable-definitions)
+        (setq step-list (cons (caddr step-def) step-list)))
+      step-list)))
 
 (defmacro my-do (variable-definitions test-result-form &rest body)
   (let ((init-list (get-init-list variable-definitions))
@@ -74,12 +75,6 @@
    ((< (* x y) 0) (* x y))
    (print x)
    (prin1 y)))
-
-(my-do ((x 1 (incf x))
-        (y 5 (decf y)))
-    ((< (* x y) 0) (* x y))
-  (print x)
-  (prin1 y))
 
 (defmacro my-setf (x v)
   `(setq ,x ,v))
@@ -107,30 +102,56 @@
                   (if (consp x) (cadr x) nil))
               binds)))
 
-(defun mappend (fn &rest lsts)
-  (print lsts)
-  (apply #'append (apply #'mapcar fn lsts)))
+(eval-when (:compile-toplevel :load-toplevel :execute)
 
-(defmacro condlet (clauses &body body)
-  (let ((bodfn (gensym))
-        (vars (mapcar #'(lambda (v) (cons v (gensym)))
-                      (remove-duplicates
-                       (mapcar #'car
-                               (mappend #'cdr clauses))))))
-    `(labels ((,bodfn ,(mapcar #'car vars)
-                ,@body))
-       (cond ,@(mapcar #'(lambda (cl)
-                           (condlet-clause vars cl bodfn))
-                       clauses)))))
+  (defun mappend (fn &rest lsts)
+    (apply #'append (apply #'mapcar fn lsts)))
 
-(defun condlet-clause (vars cl bodfn)
-  `(,(car cl) (let ,(mapcar #'cdr vars)
-                (let ,(condlet-binds vars cl)
-                  (,bodfn ,@(mapcar #'cdr vars))))))
+  (defmacro condlet (clauses &body body)
+    (let ((bodfn (gensym))
+          (vars (mapcar #'(lambda (v) (cons v (gensym)))
+                        (remove-duplicates
+                         (mapcar #'car
+                                 (mappend #'cdr clauses))))))
+      `(labels ((,bodfn ,(mapcar #'car vars)
+                  ,@body))
+         (cond ,@(mapcar #'(lambda (cl)
+                             (condlet-clause vars cl bodfn))
+                         clauses)))))
 
-(defun condlet-binds (vars cl)
-  (mapcar #'(lambda (bindform)
-              (if (consp bindform)
-                  (cons (cdr (assoc (car bindform) vars))
-                        (cdr bindform))))
-          (cdr cl)))
+  (defun condlet-clause (vars cl bodfn)
+    `(,(car cl) (let ,(mapcar #'cdr vars)
+                  (let ,(condlet-binds vars cl)
+                    (,bodfn ,@(mapcar #'cdr vars))))))
+
+  (defun condlet-binds (vars cl)
+    (mapcar #'(lambda (bindform)
+                (if (consp bindform)
+                    (cons (cdr (assoc (car bindform) vars))
+                          (cdr bindform))))
+            (cdr cl))))
+
+
+
+(condlet (((= 1 2) (x (princ 'a)) (y (princ 'b)))
+          ((= 1 1) (y (princ 'c)) (x (princ 'd)))
+          (t       (x (princ 'e)) (z (princ 'f))))
+         (list x y z))
+
+(defmacro in (obj &rest choices)
+  (let ((insym (gensym)))
+    `(let ((,insym ,obj))
+       (or ,@(mapcar #'(lambda (c) `(eql ,insym ,c))
+                     choices)))))
+
+(defmacro inq (obj &rest args)
+  `(in ,obj ,@(mapcar #'(lambda (a)
+                          `',a)
+                      args)))
+
+(in '/ '+ '- '*)
+
+(pprint (macroexpand '(inq '/ + - /)))
+
+(eval-when (:execute)
+  (print 'c))
