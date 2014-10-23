@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.*;
 
-class ThreeNPlus1 implements Runnable {
+class Main implements Runnable {
     static String ReadLn(int maxLength) {  // utility function to read from stdin,
         // Provided by Programming-challenges, edit for style only
         byte line[] = new byte [maxLength];
@@ -22,7 +22,7 @@ class ThreeNPlus1 implements Runnable {
     }
 
     public static void main(String args[]) {  // entry point from OS
-        ThreeNPlus1 myWork = new ThreeNPlus1();  // Construct the bootloader
+        Main myWork = new Main();  // Construct the bootloader
         myWork.run();            // execute
     }
 
